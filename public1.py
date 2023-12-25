@@ -81,35 +81,36 @@ def monitor_wallet_addresses():
       "0x435FcbC37C499cb8197df2D843e7c21d2E77CAbf"
   ]
 
-    # Initialize last_checked_blocks with the current block number
-    current_block = get_current_block_number()
-    if current_block:
-        for address in wallet_addresses:
-            last_checked_blocks[address] = current_block
+# Initialize last_checked_blocks with the current block number
+current_block = get_current_block_number()
+if current_block:
+    for address in wallet_addresses:
+        last_checked_blocks[address] = current_block
 
-    while True:
-        for address in wallet_addresses:
-            latest_tx = get_latest_token_transfer(address, contract_address)
-            if latest_tx:
-                if address not in last_checked_blocks or int(
-                        latest_tx['blockNumber']) > last_checked_blocks[address]:
-                    token_name = latest_tx.get('tokenName', 'Unknown Token')
-                    value = latest_tx.get('value', 'N/A')
-                    token_symbol = latest_tx.get('tokenSymbol', 'N/A')
-                    direction = 'Received' if address.lower() == latest_tx.get(
-                        'to', '').lower() else 'Sent'
+while True:
+    for address in wallet_addresses:
+        # Assuming 'contract_address' is defined earlier in your code
+        latest_tx = get_latest_token_transfer(address, contract_address)
+        if latest_tx:
+            if address not in last_checked_blocks or int(
+                    latest_tx['blockNumber'], 16) > last_checked_blocks[address]:
+                token_name = latest_tx.get('tokenName', 'Unknown Token')
+                value = latest_tx.get('value', 'N/A')
+                token_symbol = latest_tx.get('tokenSymbol', 'N/A')
+                direction = 'Received' if address.lower() == latest_tx.get(
+                    'to', '').lower() else 'Sent'
 
-                    message = (
-                        f"🚀 *New Arbiscan Transaction* 🚀\n\n"
-                        f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
-                        f"🔹 *Direction*: {direction}\n"
-                        f"🔹 *Token*: {token_name} ({token_symbol})\n"
-                        f"🔹 *Value*: {value}\n"
-                        f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
-                    send_notification(CHAT_ID, message)
+                message = (
+                    f"🚀 *New Arbiscan Transaction* 🚀\n\n"
+                    f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
+                    f"🔹 *Direction*: {direction}\n"
+                    f"🔹 *Token*: {token_name} ({token_symbol})\n"
+                    f"🔹 *Value*: {value}\n"
+                    f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
+                send_notification(CHAT_ID, message)
 
-                    last_checked_blocks[address] = int(latest_tx['blockNumber'])
-        time.sleep(30)
+                last_checked_blocks[address] = int(latest_tx['blockNumber'], 16)
+    time.sleep(30)
 
 # Start monitoring wallet addresses
 if __name__ == '__main__':
