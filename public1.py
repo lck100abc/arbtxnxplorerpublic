@@ -80,8 +80,7 @@ def send_notification(chat_id, message):
 
 def monitor_wallet_addresses():
   wallet_addresses = [
-      "0xd1592F72b32537e470c4B38e708C3aF0832868EB",
-      "0xa322075bE559eD4b7Cc1e391f6CE8F2E77e426fe",
+      "0x", "0xa322075bE559eD4b7Cc1e391f6CE8F2E77e426fe",
       "0x38760f194a4303a9D7297b149E066D3c8E024745",
       "0x2bF3388F8CE63B822e7C9aBB423547E4E7b7f455",
       "0x0268C6b26a9148c25118aa462E5658f668C821F3",
@@ -99,6 +98,7 @@ def monitor_wallet_addresses():
       "0x00336cD9F823dd8B5C5741638E5038FD561F01B9",
       "0x435FcbC37C499cb8197df2D843e7c21d2E77CAbf"
   ]
+
   current_block = get_current_block_number()
   if current_block:
     for address in wallet_addresses:
@@ -107,10 +107,9 @@ def monitor_wallet_addresses():
   while True:
     for address in wallet_addresses:
       latest_tx = get_latest_token_transfer(address)
-      if latest_tx and isinstance(latest_tx,
-                                  dict) and 'blockNumber' in latest_tx:
-        last_checked_block = last_checked_blocks.get(address, 0)
-        if int(latest_tx['blockNumber'], 16) > last_checked_block:
+      if latest_tx:
+        if address not in last_checked_blocks or int(
+            latest_tx['blockNumber']) > last_checked_blocks[address]:
           token_name = latest_tx.get('tokenName', 'Unknown Token')
           value = latest_tx.get('value', 'N/A')
           token_symbol = latest_tx.get('tokenSymbol', 'N/A')
@@ -129,10 +128,7 @@ def monitor_wallet_addresses():
               f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
           send_notification(CHAT_ID, message)
 
-          last_checked_blocks[address] = int(latest_tx['blockNumber'], 16)
-      else:
-        print(
-            f"Error or unexpected response for address {address}: {latest_tx}")
+          last_checked_blocks[address] = int(latest_tx['blockNumber'])
     time.sleep(30)
 
 
