@@ -17,69 +17,51 @@ API_URL = 'https://api.arbiscan.io/api'
 # Dictionary to store the last checked block number for each wallet address
 last_checked_blocks = {}
 
-
+# Function to get the current block number
 def get_current_block_number():
-  params = {'module': 'proxy', 'action': 'eth_blockNumber', 'apikey': API_KEY}
-  response = requests.get(API_URL, params=params)
-  if response.status_code == 200:
-    current_block = int(response.json().get('result', '0x0'), 16)
-    return current_block
-  else:
-    return None
-
-
-def get_latest_token_transfer(
-    address, contract_address='0xda10009cbd5d07dd0cecc66161fc93d7c9000da1'):
-  params = {
-      'module': 'account',
-      'action': 'tokentx',
-      'contractaddress': contract_address,
-      'address': address,
-      'page': 1,
-      'offset': 1,
-      'startblock': last_checked_blocks.get(address, 0) + 1,
-      'endblock': 'latest',
-      'sort': 'asc',
-      'apikey': API_KEY
-  }
-  response = requests.get(API_URL, params=params)
-  if response.status_code == 200:
-    result = response.json().get('result', [])
-    if result:
-      return result[0]
+    params = {'module': 'proxy', 'action': 'eth_blockNumber', 'apikey': API_KEY}
+    response = requests.get(API_URL, params=params)
+    if response.status_code == 200:
+        current_block = int(response.json().get('result', '0x0'), 16)
+        return current_block
     else:
-      return None
-  else:
-    return None
+        return None
 
-
-def get_token_balance(address, contract_address):
-  params = {
-      'module': 'account',
-      'action': 'tokenbalance',
-      'contractaddress': contract_address,
-      'address': address,
-      'tag': 'latest',
-      'apikey': API_KEY
-  }
-  response = requests.get(API_URL, params=params)
-  if response.status_code == 200:
-    balance = response.json().get('result', '0')
-    return balance
-  else:
-    return None
-
+# Function to get the latest token transfer for an address
+def get_latest_token_transfer(address, contract_address):
+    params = {
+        'module': 'account',
+        'action': 'tokentx',
+        'contractaddress': contract_address,
+        'address': address,
+        'page': 1,
+        'offset': 1,  # Assuming you still want the latest transaction
+        'startblock': last_checked_blocks.get(address, 0) + 1,
+        'endblock': 'latest',
+        'sort': 'asc',
+        'apikey': API_KEY
+    }
+    response = requests.get(API_URL, params=params)
+    if response.status_code == 200:
+        result = response.json().get('result', [])
+        if result:
+            return result[0]  # Get the latest transaction
+        else:
+            return None
+    else:
+        return None
 
 # Initialize the bot
 bot = telepot.Bot(BOT_TOKEN)
 
-
+# Function to send a notification message
 def send_notification(chat_id, message):
-  bot.sendMessage(chat_id, message, parse_mode="Markdown")
+    bot.sendMessage(chat_id, message, parse_mode="Markdown")
 
-
+# Main function to monitor wallet addresses and send notifications
 def monitor_wallet_addresses():
   wallet_addresses = [
+      "0xd1592F72b32537e470c4B38e708C3aF0832868EB",
       "0xa322075bE559eD4b7Cc1e391f6CE8F2E77e426fe",
       "0x38760f194a4303a9D7297b149E066D3c8E024745",
       "0x2bF3388F8CE63B822e7C9aBB423547E4E7b7f455",
@@ -99,38 +81,36 @@ def monitor_wallet_addresses():
       "0x435FcbC37C499cb8197df2D843e7c21d2E77CAbf"
   ]
 
-  current_block = get_current_block_number()
-  if current_block:
-    for address in wallet_addresses:
-      last_checked_blocks[address] = current_block
+    # Initialize last_checked_blocks with the current block number
+    current_block = get_current_block_number()
+    if current_block:
+        for address in wallet_addresses:
+            last_checked_blocks[address] = current_block
 
-  while True:
-    for address in wallet_addresses:
-      latest_tx = get_latest_token_transfer(address)
-      if latest_tx:
-        if address not in last_checked_blocks or int(
-            latest_tx['blockNumber']) > last_checked_blocks[address]:
-          token_name = latest_tx.get('tokenName', 'Unknown Token')
-          value = latest_tx.get('value', 'N/A')
-          token_symbol = latest_tx.get('tokenSymbol', 'N/A')
-          contract_address = latest_tx.get('contractAddress', 'N/A')
-          balance = get_token_balance(address, contract_address)
-          direction = 'Received' if address.lower() == latest_tx.get(
-              'to', '').lower() else 'Sent'
+    while True:
+        for address in wallet_addresses:
+            latest_tx = get_latest_token_transfer(address, contract_address)
+            if latest_tx:
+                if address not in last_checked_blocks or int(
+                        latest_tx['blockNumber']) > last_checked_blocks[address]:
+                    token_name = latest_tx.get('tokenName', 'Unknown Token')
+                    value = latest_tx.get('value', 'N/A')
+                    token_symbol = latest_tx.get('tokenSymbol', 'N/A')
+                    direction = 'Received' if address.lower() == latest_tx.get(
+                        'to', '').lower() else 'Sent'
 
-          message = (
-              f"🚀 *New Arbiscan Transaction* 🚀\n\n"
-              f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
-              f"🔹 *Direction*: {direction}\n"
-              f"🔹 *Token*: {token_name} ({token_symbol})\n"
-              f"🔹 *Value*: {value}\n"
-              f"🔹 *Balance*: {balance}\n"
-              f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
-          send_notification(CHAT_ID, message)
+                    message = (
+                        f"🚀 *New Arbiscan Transaction* 🚀\n\n"
+                        f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
+                        f"🔹 *Direction*: {direction}\n"
+                        f"🔹 *Token*: {token_name} ({token_symbol})\n"
+                        f"🔹 *Value*: {value}\n"
+                        f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
+                    send_notification(CHAT_ID, message)
 
-          last_checked_blocks[address] = int(latest_tx['blockNumber'])
-    time.sleep(30)
+                    last_checked_blocks[address] = int(latest_tx['blockNumber'])
+        time.sleep(30)
 
-
+# Start monitoring wallet addresses
 if __name__ == '__main__':
-  monitor_wallet_addresses()
+    monitor_wallet_addresses()
