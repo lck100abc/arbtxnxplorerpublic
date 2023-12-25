@@ -80,7 +80,7 @@ def send_notification(chat_id, message):
 
 def monitor_wallet_addresses():
   wallet_addresses = [
-      "0x", "0xd1592F72b32537e470c4B38e708C3aF0832868EB",
+      "0xd1592F72b32537e470c4B38e708C3aF0832868EB",
       "0xa322075bE559eD4b7Cc1e391f6CE8F2E77e426fe",
       "0x38760f194a4303a9D7297b149E066D3c8E024745",
       "0x2bF3388F8CE63B822e7C9aBB423547E4E7b7f455",
