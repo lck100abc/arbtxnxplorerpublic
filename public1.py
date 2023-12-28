@@ -17,48 +17,47 @@ API_URL = 'https://api.arbiscan.io/api'
 # Dictionary to store the last checked block number for each wallet address
 last_checked_blocks = {}
 
-# Function to get the current block number
+
 def get_current_block_number():
-    params = {'module': 'proxy', 'action': 'eth_blockNumber', 'apikey': API_KEY}
-    response = requests.get(API_URL, params=params)
-    if response.status_code == 200:
-        current_block = int(response.json().get('result', '0x0'), 16)
-        return current_block
-    else:
-        return None
+  params = {'module': 'proxy', 'action': 'eth_blockNumber', 'apikey': API_KEY}
+  response = requests.get(API_URL, params=params)
+  if response.status_code == 200:
+    current_block = int(response.json().get('result', '0x0'), 16)
+    return current_block
+  else:
+    return None
 
-# Function to get the latest token transfer for an address
-def get_latest_token_transfer(address, contract_address):
-    params = {
-        'module': 'account',
-        'action': 'tokentx',
-        'contractaddress': contract_address,
-        'address': address,
-        'page': 1,
-        'offset': 1,  # Assuming you still want the latest transaction
-        'startblock': last_checked_blocks.get(address, 0) + 1,
-        'endblock': 'latest',
-        'sort': 'asc',
-        'apikey': API_KEY
-    }
-    response = requests.get(API_URL, params=params)
-    if response.status_code == 200:
-        result = response.json().get('result', [])
-        if result:
-            return result[0]  # Get the latest transaction
-        else:
-            return None
-    else:
-        return None
 
-# Initialize the bot
+def get_latest_token_transfer(address):
+  params = {
+      'module': 'account',
+      'action': 'tokentx',
+      'address': address,
+      'page': 1,
+      'offset': 1,
+      'startblock': last_checked_blocks.get(address, 0) + 1,
+      'endblock': 'latest',
+      'sort': 'asc',
+      'apikey': API_KEY
+  }
+  response = requests.get(API_URL, params=params)
+  if response.status_code == 200:
+    result = response.json().get('result', [])
+    if result:
+      return result[0]
+    else:
+      return None
+  else:
+    return None
+
+
 bot = telepot.Bot(BOT_TOKEN)
 
-# Function to send a notification message
-def send_notification(chat_id, message):
-    bot.sendMessage(chat_id, message, parse_mode="Markdown")
 
-# Main function to monitor wallet addresses and send notifications
+def send_notification(chat_id, message):
+  bot.sendMessage(chat_id, message, parse_mode="Markdown")
+
+
 def monitor_wallet_addresses():
   wallet_addresses = [
       "0xd1592F72b32537e470c4B38e708C3aF0832868EB",
@@ -78,40 +77,53 @@ def monitor_wallet_addresses():
       "0x858da48232eA6731f22573Dc711c0cC415c334C5",
       "0x858da48232eA6731f22573Dc711c0cC415c334C5",
       "0x00336cD9F823dd8B5C5741638E5038FD561F01B9",
-      "0x435FcbC37C499cb8197df2D843e7c21d2E77CAbf"
+      "0x435FcbC37C499cb8197df2D843e7c21d2E77CAbf",
+      "0xcbcD52649dA7f7364BFaf9b51D1265C3C9406382",
+      "0x467E34B3F40298364cf506636Be5A3B1be50D0eB",
+      "0x3710eDF9aFCc7C38BC0851d1cC424b6571094291",
+      "0x8D67C166220c8C535F0f675BF9c6f831CB010da7",
+      "0xeF4574FE9B23426e2dE294d822A2994dbEedc6d6",
+      "0xb791AbD54DE4c844C9368c1e41a62559AAcCCF02",
+      "0x4f5cFB73df4A406db70D0859a9f8a768D5F1193b",
+      "0x6286b9f080D27f860F6b4bb0226F8EF06CC9F2Fc",
+      "0xF862fd9f58957511D96e4504aa683691EBceF776",
+      "0xDe485812E28824e542B9c2270B6b8eD9232B7D0b",
+      "0x0E6Aa54f683dFFC3D6BDb4057Bdb47cBc18975E7"
   ]
 
-# Initialize last_checked_blocks with the current block number
-current_block = get_current_block_number()
-if current_block:
+  current_block = get_current_block_number()
+  if current_block:
     for address in wallet_addresses:
-        last_checked_blocks[address] = current_block
+      last_checked_blocks[address] = current_block
 
-while True:
+  while True:
     for address in wallet_addresses:
-        # Assuming 'contract_address' is defined earlier in your code
-        latest_tx = get_latest_token_transfer(address, contract_address)
-        if latest_tx:
-            if address not in last_checked_blocks or int(
-                    latest_tx['blockNumber'], 16) > last_checked_blocks[address]:
-                token_name = latest_tx.get('tokenName', 'Unknown Token')
-                value = latest_tx.get('value', 'N/A')
-                token_symbol = latest_tx.get('tokenSymbol', 'N/A')
-                direction = 'Received' if address.lower() == latest_tx.get(
-                    'to', '').lower() else 'Sent'
-
-                message = (
-                    f"🚀 *New Arbiscan Transaction* 🚀\n\n"
-                    f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
-                    f"🔹 *Direction*: {direction}\n"
-                    f"🔹 *Token*: {token_name} ({token_symbol})\n"
-                    f"🔹 *Value*: {value}\n"
-                    f"🔹 *Block Number*: {latest_tx['blockNumber']}\n")
-                send_notification(CHAT_ID, message)
-
-                last_checked_blocks[address] = int(latest_tx['blockNumber'], 16)
+      latest_tx = get_latest_token_transfer(address)
+      if latest_tx and isinstance(latest_tx,
+                                  dict) and 'blockNumber' in latest_tx:
+        block_number = int(latest_tx['blockNumber'], 16)
+        if address not in last_checked_blocks or block_number > last_checked_blocks[
+            address]:
+          token_name = latest_tx.get('tokenName', 'Unknown Token')
+          value = latest_tx.get('value', 'N/A')
+          token_symbol = latest_tx.get('tokenSymbol', 'N/A')
+          direction = 'Received' if address.lower() == latest_tx.get(
+              'to', '').lower() else 'Sent'
+          message = (
+              f"🚀 *New Arbiscan Transaction* 🚀\n\n"
+              f"🔹 *Address*: [{address}](https://arbiscan.io/address/{address})\n"
+              f"🔹 *Direction*: {direction}\n"
+              f"🔹 *Token*: {token_name} ({token_symbol})\n"
+              f"🔹 *Value*: {value}\n"
+              f"🔹 *Block Number*: {block_number}\n")
+          send_notification(CHAT_ID, message)
+          last_checked_blocks[address] = block_number
+      else:
+        print(
+            f"Error: Expected a dictionary with a 'blockNumber' key but got: {latest_tx}"
+        )
     time.sleep(30)
 
-# Start monitoring wallet addresses
+
 if __name__ == '__main__':
-    monitor_wallet_addresses()
+  monitor_wallet_addresses()
