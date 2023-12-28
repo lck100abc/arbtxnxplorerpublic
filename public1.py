@@ -25,6 +25,7 @@ def get_current_block_number():
     current_block = int(response.json().get('result', '0x0'), 16)
     return current_block
   else:
+    print(f"Error fetching current block number: HTTP {response.status_code}")
     return None
 
 
@@ -48,6 +49,7 @@ def get_latest_token_transfer(address):
     else:
       return None
   else:
+    print(f"Error fetching transactions: HTTP {response.status_code}")
     return None
 
 
@@ -120,7 +122,7 @@ def monitor_wallet_addresses():
           last_checked_blocks[address] = block_number
       else:
         print(
-            f"Error: Expected a dictionary with a 'blockNumber' key but got: {latest_tx}"
+            f"No new transactions found for address {address} or error occurred."
         )
     time.sleep(30)
 
