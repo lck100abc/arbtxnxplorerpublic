@@ -1,10 +1,12 @@
-Important Codes:
-Run the function: python3 public1.py
+Key Codes: 
+Directory: cd arbbot
+Directory 2: cd arbtxnxplorerpublic
+Run the scrip: python3 public1.py
+Stop process: kill PID
 Update from github: git pull origin main
 Reboot: sudo reboot
-Find directory: cd arbtxnxplorerpublic
-Create the virtual environment: python3 -m venv myvenv
-Activate the virtual environmnet: source myvenv/bin/activate
-Start a new screen session: screen -S arb_session
-Check the status: htop
-Check the status of the screen session: screen -r arb_session
+Check status: htop
+Create screen session: screen -S arbbot
+Check status of screen session: screen -r arbbot
+Inspect the program: ps aux | grep python
+Review logs: dmesg | tail
